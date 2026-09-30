@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pembayaran — Lumen</title>
+  <meta name="description" content="Selesaikan pembayaran tiket bioskop kamu di Lumen.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+</head>
+
+<body class="bg-night text-ink font-sans min-h-screen">
+  <header id="hdr"></header>
+
+  <div class="max-w-5xl mx-auto px-4 pt-6">
+    <button onclick="history.length > 1 ? history.back() : location.href='index.html'"
+      class="flex items-center gap-2 text-mute hover:text-ink transition-colors text-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+      </svg>
+      Kembali
+    </button>
+  </div>
+
+  <main id="main" class="max-w-md mx-auto px-4 pb-16"></main>
+  <script>
+    const D = getDraft();
+    if (!D || !D.seats || !D.seats.length) {
+      $('#main').innerHTML = '<p class="mt-10 text-mute">Belum ada kursi yang dipilih. <a class="underline text-ink" href="index.html">Mulai dari daftar film</a></p>';
+    } else {
+      const m = movieById(D.movieId), c = cinemaById(D.cinemaId), total = D.seats.length * PRICE;
+      const inp = 'mt-1 w-full bg-panel border border-line rounded px-3 py-2 text-ink';
+      $('#main').innerHTML = `
+    <h1 class="font-display text-4xl mt-8">Pembayaran</h1>
+    <dl class="mt-4 border border-line rounded divide-y divide-line">
+      ${[['Film', m.title], ['Bioskop', c.name], ['Jadwal', fmtDate(D.date) + ', ' + D.time],
+          ['Kursi', D.seats.join(', ')], ['Total', rupiah(total)]]
+            .map(([k, v]) => `<div class="flex justify-between gap-4 px-4 py-3"><dt class="text-mute">${k}</dt><dd class="text-right font-medium">${v}</dd></div>`).join('')}
+    </dl>
+    <form id="f" class="mt-6 space-y-4">
+      <label class="block text-sm text-mute">Nama<input name="name" required placeholder="Nama lengkap" class="${inp}"></label>
+      <label class="block text-sm text-mute">Email<input name="email" type="email" required placeholder="email@example.com" class="${inp}"></label>
+      <fieldset>
+        <legend class="text-sm text-mute mb-2">Metode bayar</legend>
+        ${['Transfer Bank', 'E-Wallet', 'Kartu'].map((p, i) => `<label class="flex items-center gap-3 border border-line rounded px-4 py-3 mb-2">
+          <input type="radio" name="pay" value="${p}" ${i ? '' : 'checked'}>${p}</label>`).join('')}
+      </fieldset>
+      <p class="text-sm text-mute">Ini simulasi. Tidak ada uang yang diproses.</p>
+      <p id="err" role="alert" class="text-sm"></p>
+      <button id="btn" class="w-full bg-accent text-white py-3 rounded font-medium disabled:opacity-60">Bayar ${rupiah(total)}</button>
+    </form>`;
+
+      $('#f').onsubmit = e => {
+        e.preventDefault();
+        const f = new FormData(e.target), btn = $('#btn');
+        btn.disabled = true; btn.textContent = 'Memproses pembayaran...';
+        setTimeout(() => {
+          const r = saveBooking(D, f.get('pay'), { name: f.get('name'), email: f.get('email') });
+          if (r.ok) { location.href = 'ticket.html?code=' + r.booking.code; return; }
+          $('#err').innerHTML = `Kursi ${r.clash.join(', ')} baru saja dipesan orang lain. <a class="underline" href="${seatsUrl(D)}">Pilih kursi lagi</a>`;
+          btn.disabled = false; btn.textContent = 'Bayar ' + rupiah(total);
+        }, 2000);
+      };
+    }
+  </script>
+</body>
+
+</html>

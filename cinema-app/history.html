@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pesanan Saya — Lumen</title>
+  <meta name="description" content="Lihat riwayat tiket bioskop yang sudah kamu pesan di Lumen.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+</head>
+
+<body class="bg-night text-ink font-sans min-h-screen">
+  <header id="hdr"></header>
+
+  <div class="max-w-5xl mx-auto px-4 pt-6">
+    <button onclick="history.length > 1 ? history.back() : location.href='index.html'"
+      class="flex items-center gap-2 text-mute hover:text-ink transition-colors text-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+      </svg>
+      Kembali
+    </button>
+  </div>
+
+  <main id="main" class="max-w-md mx-auto px-4 pb-16"></main>
+  <script>
+    const list = getBookings().reverse();   // terbaru di atas
+    $('#main').innerHTML = `<h1 class="font-display text-4xl mt-8">Pesanan saya</h1>` + (list.length
+      ? `<ul class="mt-4 border border-line rounded divide-y divide-line">${list.map(b => {
+          const movie = movieById(b.movieId);
+          const title = movie ? movie.title : '(Film tidak dikenal)';
+          return `<li>
+      <a href="ticket.html?code=${b.code}" class="flex justify-between gap-4 px-4 py-4 hover:bg-panel">
+        <span><span class="block font-medium">${title}</span>
+        <span class="block text-sm text-mute">${fmtDate(b.date)}, ${b.time} · Kursi ${b.seats.join(', ')}</span></span>
+        <span class="text-sm text-mute self-center">${b.code}</span>
+      </a></li>`;
+        }).join('')}</ul>`
+      : `<p class="mt-6 text-mute">Belum ada pesanan. Tiket yang sudah dibayar akan muncul di sini. <a class="underline text-ink" href="index.html">Lihat film</a></p>`);
+  </script>
+</body>
+
+</html>

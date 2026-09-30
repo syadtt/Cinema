@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumen — Pesan Tiket Bioskop</title>
+  <meta name="description" content="Lumen — Aplikasi pemesanan tiket bioskop online. Pilih film, pilih kursi, dan bayar dengan mudah.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+</head>
+
+<body class="bg-night text-ink font-sans min-h-screen">
+  <header id="hdr"></header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-16">
+    <h1 class="font-display text-5xl mt-8">Mau nonton apa?</h1>
+    <div class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div id="tabs" class="flex gap-6">
+        <button data-tab="now">Sedang Tayang</button>
+        <button data-tab="soon">Segera Tayang</button>
+      </div>
+      <input id="search" type="search" placeholder="Cari judul film" aria-label="Cari judul film"
+             class="sm:w-64 bg-panel border border-line rounded px-3 py-2">
+    </div>
+    <div id="list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+    <p id="empty" class="mt-10 text-mute"></p>
+    <p class="mt-12 text-sm text-mute">Data film di aplikasi ini adalah contoh untuk keperluan tugas.</p>
+  </main>
+
+  <script>
+  let tab = 'now', term = '';
+
+  const card = m => {
+    const body = `<div class="relative aspect-[2/3] bg-panel border border-line rounded overflow-hidden flex items-center justify-center">
+      <span class="font-display text-3xl text-mute">${m.genre}</span>
+      <img src="${m.poster}" alt="Poster ${m.title}" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+    </div>
+    <p class="mt-2 font-medium">${m.title}</p>
+    <p class="text-sm text-mute">${m.genre} · ${m.duration} menit</p>`;
+    return m.status == 'now'
+      ? `<a href="movie.html?id=${m.id}" class="block">${body}</a>`
+      : `<div>${body}<p class="text-sm text-mute">Belum bisa dipesan</p></div>`;
+  };
+
+  function render() {
+    const rows = MOVIES.filter(m => m.status == tab && m.title.toLowerCase().includes(term));
+    $('#list').innerHTML = rows.map(card).join('');
+    $('#empty').textContent = rows.length ? '' : term
+      ? `Tidak ada film berjudul "${term}" di tab ini. Coba kata kunci lain atau pindah tab.`
+      : 'Belum ada film di tab ini.';
+    document.querySelectorAll('#tabs button').forEach(b => {
+      b.className = 'pb-1 border-b-2 ' + (b.dataset.tab == tab ? 'border-ink' : 'border-transparent text-mute');
+    });
+  }
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
+  $('#search').oninput = e => { term = e.target.value.trim().toLowerCase(); render(); };
+  render();
+  </script>
+</body>
+
+</html>

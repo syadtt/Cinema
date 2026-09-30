@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pilih Kursi — Lumen</title>
+  <meta name="description" content="Pilih kursi favorit kamu untuk menonton film di Lumen.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+</head>
+
+<body class="bg-night text-ink font-sans min-h-screen">
+  <header id="hdr"></header>
+
+  <div class="max-w-5xl mx-auto px-4 pt-6">
+    <button onclick="history.length > 1 ? history.back() : location.href='index.html'"
+      class="flex items-center gap-2 text-mute hover:text-ink transition-colors text-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+      </svg>
+      Kembali
+    </button>
+  </div>
+
+  <main id="main" class="max-w-md mx-auto px-4 pb-32"></main>
+  <div id="bar" class="hidden fixed bottom-0 inset-x-0 bg-panel border-t border-line">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div>
+        <p id="sel" class="font-medium"></p>
+        <p id="tot" class="text-sm text-mute"></p>
+      </div>
+      <button id="next"
+          class="bg-accent text-white px-5 py-3 rounded font-medium disabled:opacity-40 disabled:cursor-not-allowed">Lanjut
+          Bayar</button>
+    </div>
+  </div>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const D = { movieId: q.get('movie'), cinemaId: q.get('cinema'), date: q.get('date'), time: q.get('time'), seats: [] };
+    const m = movieById(D.movieId), c = cinemaById(D.cinemaId);
+
+    function summary() {
+      const n = D.seats.length;
+      $('#sel').textContent = n ? 'Kursi ' + sortSeats(D.seats).join(', ') : 'Belum ada kursi dipilih';
+      $('#tot').textContent = n ? `${n} kursi · ${rupiah(n * PRICE)}` : `${rupiah(PRICE)} per kursi`;
+      $('#next').disabled = !n;
+    }
+
+    function toggle(code, b) {
+      const i = D.seats.indexOf(code);
+      if (i >= 0) D.seats.splice(i, 1);
+      else if (D.seats.length < MAX_SEATS) D.seats.push(code);
+      else { $('#note').textContent = `Maksimal ${MAX_SEATS} kursi per pesanan.`; return; }
+      $('#note').textContent = '';
+      const on = D.seats.includes(code);
+      b.classList.toggle('bg-accent', on); b.classList.toggle('text-white', on);
+      b.classList.toggle('border-accent', on); b.classList.toggle('border-mute', !on);
+      b.setAttribute('aria-pressed', on);
+      summary();
+    }
+
+    function init() {
+      const taken = takenSeats(D);
+      $('#main').innerHTML = `
+    <h1 class="font-display text-4xl mt-8">${m.title}</h1>
+    <p class="text-mute">${c.name} · ${fmtDate(D.date)} · ${D.time}</p>
+    <div class="mt-8 h-1 bg-ink/60 rounded"></div>
+    <p class="text-center text-sm text-mute mt-1">Layar</p>
+    <div id="grid" class="mt-6 grid grid-cols-[1.5rem_repeat(10,minmax(0,1fr))] gap-1.5"></div>
+    <div class="mt-6 flex gap-5 text-sm text-mute">
+      <span class="flex items-center gap-2"><i class="w-4 h-4 rounded border border-mute"></i>Tersedia</span>
+      <span class="flex items-center gap-2"><i class="w-4 h-4 rounded bg-accent"></i>Dipilih</span>
+      <span class="flex items-center gap-2"><i class="w-4 h-4 rounded bg-line"></i>Terisi</span>
+    </div>
+    <p id="note" class="mt-3 text-sm h-5"></p>`;
+      const g = $('#grid');
+      for (const r of ROWS) {
+        g.insertAdjacentHTML('beforeend', `<span class="self-center text-sm text-mute">${r}</span>`);
+        for (let n = 1; n <= COLS; n++) {
+          const code = r + n, isTaken = taken.includes(code), b = document.createElement('button');
+          b.className = 'aspect-square rounded text-xs border ' + (isTaken ? 'bg-line text-mute border-line cursor-not-allowed' : 'border-mute');
+          b.textContent = isTaken ? '×' : n;
+          b.setAttribute('aria-label', `Kursi ${code}${isTaken ? ', sudah terisi' : ''}`);
+          if (isTaken) b.disabled = true; else b.onclick = () => toggle(code, b);
+          g.append(b);
+        }
+      }
+      $('#bar').classList.remove('hidden');
+      $('#next').onclick = () => { D.seats = sortSeats(D.seats); setDraft(D); location.href = 'checkout.html'; };
+      summary();
+    }
+
+    if (!m || !c || !D.date || !D.time) {
+      $('#main').innerHTML = '<p class="mt-10 text-mute">Jadwal belum lengkap. <a class="underline text-ink" href="index.html">Pilih film dan jadwal dulu</a></p>';
+    } else init();
+  </script>
+</body>
+
+</html>

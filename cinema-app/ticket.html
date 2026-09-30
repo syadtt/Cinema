@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>E-Ticket — Lumen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body class="bg-night text-ink font-sans min-h-screen">
+    <header id="hdr"></header>
+
+  <div class="max-w-5xl mx-auto px-4 pt-6">
+    <button onclick="history.length > 1 ? history.back() : location.href='index.html'"
+      class="flex items-center gap-2 text-mute hover:text-ink transition-colors text-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+      </svg>
+      Kembali
+    </button>
+  </div>
+
+  <main id="main" class="max-w-sm mx-auto px-4 pb-16"></main>
+    <script>
+        const b = getBookings().find(x => x.code == new URLSearchParams(location.search).get('code'));
+        if (!b) {
+            $('#main').innerHTML = '<p class="mt-10 text-mute">Tiket tidak ditemukan di browser ini. <a class="underline text-ink" href="history.html">Lihat pesanan saya</a></p>';
+        } else {
+            const m = movieById(b.movieId), c = cinemaById(b.cinemaId);
+            const info = ([k, v]) => `<div><dt class="text-mute">${k}</dt><dd class="font-medium">${v}</dd></div>`;
+            $('#main').innerHTML = `
+      <article class="mt-8 bg-panel border border-line rounded-lg overflow-hidden">
+        <div class="p-6">
+          <p class="text-sm text-mute">${c.name}</p>
+          <h1 class="font-display text-4xl mt-1">${m.title}</h1>
+          <dl class="mt-5 grid grid-cols-2 gap-y-4 text-sm">
+            ${[['Tanggal', fmtDate(b.date)], ['Jam', b.time], ['Kursi', b.seats.join(', ')], ['Atas nama', b.name]].map(info).join('')}
+          </dl>
+        </div>
+        <div class="relative border-t-2 border-dashed border-line p-6 text-center">
+          <span class="absolute -left-2 -top-2 w-4 h-4 rounded-full bg-night"></span>
+          <span class="absolute -right-2 -top-2 w-4 h-4 rounded-full bg-night"></span>
+          <div id="qr" class="mx-auto mb-4 w-40 h-40 bg-ink p-2 rounded flex items-center justify-center"></div>
+          <p class="text-sm text-mute">Kode booking</p>
+          <p class="font-display text-5xl">${b.code}</p>
+          <p class="text-sm text-mute mt-1">${b.payment} · ${rupiah(b.total)} · Lunas</p>
+        </div>
+      </article>
+      <div class="mt-6 flex gap-3">
+        <button onclick="print()" class="flex-1 border border-line rounded py-3">Cetak tiket</button>
+        <a href="history.html" class="flex-1 text-center border border-line rounded py-3">Pesanan saya</a>
+      </div>`;
+
+            // QR gelap di atas kotak terang supaya mudah dipindai; kalau library gagal dimuat, kode teks tetap tampil
+            if (window.QRCode) {
+                new QRCode($('#qr'), {
+                    text: b.code, width: 144, height: 144,
+                    colorDark: '#141210', colorLight: '#efe8dc', correctLevel: QRCode.CorrectLevel.M
+                });
+            } else $('#qr').remove();
+        }
+    </script>
+</body>
+
+</html>

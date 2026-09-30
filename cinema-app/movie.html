@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detail Film — Lumen</title>
+  <meta name="description" content="Pilih bioskop, tanggal, dan jam tayang untuk film pilihan kamu di Lumen.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+</head>
+
+<body class="bg-night text-ink font-sans min-h-screen">
+  <header id="hdr"></header>
+
+  <main id="main" class="max-w-5xl mx-auto px-4 pb-16"></main>
+  <script>
+    const m = movieById(new URLSearchParams(location.search).get('id'));
+    const S = { cinema: null, date: null, time: null }, today = getDates()[0];
+    const passed = t => S.date == today && t < new Date().toTimeString().slice(0, 5);
+
+    function chips(el, items, sel, fn) {
+      $(el).innerHTML = items.map(i => `<button data-v="${i.v}" ${i.off ? 'disabled' : ''}
+    class="px-4 py-2 rounded border ${i.v == sel ? 'bg-ink text-night border-ink' : 'border-line'} disabled:opacity-40 disabled:line-through">${i.label}</button>`).join('');
+      $(el).querySelectorAll('button').forEach(b => b.onclick = () => {
+        fn(b.dataset.v);
+        $(el + ' [data-v="' + b.dataset.v + '"]').focus();   // jaga fokus keyboard setelah redraw
+      });
+    }
+
+    function draw() {
+      chips('#cinemas', CINEMAS.map(c => ({ v: c.id, label: c.name })), S.cinema, v => { S.cinema = v; draw(); });
+      chips('#dates', getDates().map(d => ({ v: d, label: fmtDate(d) })), S.date, v => { S.date = v; S.time = null; draw(); });
+      chips('#times', TIMES.map(t => ({ v: t, label: t, off: passed(t) })), S.time, v => { S.time = v; draw(); });
+      const ready = S.cinema && S.date && S.time;
+      $('#go').disabled = !ready;
+      $('#hint').textContent = ready ? '' : 'Pilih bioskop, tanggal, dan jam dulu.';
+    }
+
+    if (!m || m.status != 'now') {
+      $('#main').innerHTML = '<p class="mt-10 text-mute">Film tidak ditemukan atau belum tayang. <a class="underline text-ink" href="index.html">Kembali ke daftar film</a></p>';
+    } else {
+      document.title = m.title + ' — Lumen';
+      $('#main').innerHTML = `
+  <button onclick="history.length > 1 ? history.back() : location.href='index.html'"
+    class="mt-8 flex items-center gap-2 text-mute hover:text-ink transition-colors text-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Kembali
+  </button>
+  <div class="mt-6 grid md:grid-cols-[16rem_1fr] gap-8">
+    <div class="relative aspect-[2/3] max-w-[16rem] bg-panel border border-line rounded overflow-hidden flex items-center justify-center">
+      <span class="font-display text-3xl text-mute">${m.genre}</span>
+      <img src="${m.poster}" alt="Poster ${m.title}" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+    </div>
+    <div>
+      <h1 class="font-display text-5xl">${m.title}</h1>
+      <p class="text-mute mt-1">${m.genre} · ${m.duration} menit · ${m.rating}</p>
+      <p class="mt-4 max-w-prose">${m.synopsis}</p>
+      <div class="mt-8 space-y-5">
+        <div><h2 class="text-sm text-mute mb-2">Bioskop</h2><div id="cinemas" class="flex flex-wrap gap-2"></div></div>
+        <div><h2 class="text-sm text-mute mb-2">Tanggal</h2><div id="dates" class="flex flex-wrap gap-2"></div></div>
+        <div><h2 class="text-sm text-mute mb-2">Jam tayang</h2><div id="times" class="flex flex-wrap gap-2"></div></div>
+      </div>
+      <button id="go" class="mt-8 bg-accent text-white px-6 py-3 rounded font-medium disabled:opacity-40 disabled:cursor-not-allowed">Pilih Kursi</button>
+      <p id="hint" class="text-sm text-mute mt-2"></p>
+    </div>
+  </div>`;
+      $('#go').onclick = () => location.href = seatsUrl({ movieId: m.id, cinemaId: S.cinema, date: S.date, time: S.time });
+      draw();
+    }
+  </script>
+</body>
+
+</html>
